@@ -1,48 +1,38 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pacific Ring of Fire</title>
-    <!-- Inclusion de la bibliothèque Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        /* Style pour la carte */
-        #map {
-            height: 600px;
-            width: 100%;
-        }
-    </style>
-</head>
-<body>
-    <h1>Cartographie interactive du Pacific Ring of Fire</h1>
-    <div id="map"></div> <!-- Zone de la carte -->
+<script>
+    // Initialisation de la carte
+    var map = L.map('map').setView([0, 0], 2);
 
-    <!-- Inclusion de la bibliothèque Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        // Initialisation de la carte
-        var map = L.map('map').setView([0, 0], 2); // Coordonnées centrées sur le globe
+    // Couche de fond OpenStreetMap
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
 
-        // Ajout d'une couche de carte OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Exemple : Ajouter des marqueurs pour le "Ring of Fire"
-        var locations = [
-            { lat: -8.3405, lng: 115.0920, popup: "Bali, Indonésie (Volcan actif)" },
-            { lat: 37.75, lng: -122.68, popup: "San Francisco, Californie (Faille de San Andreas)" },
-            { lat: 35.3606, lng: 138.7274, popup: "Mont Fuji, Japon" },
-            { lat: -38.1500, lng: 176.2600, popup: "White Island, Nouvelle-Zélande" }
-        ];
-
-        // Ajouter les marqueurs sur la carte
-        locations.forEach(function(loc) {
-            L.marker([loc.lat, loc.lng]).addTo(map)
-                .bindPopup(loc.popup);
-        });
-    </script>
-</body>
-</html>
+    // Charger le fichier GeoJSON corrigé
+    fetch('cleaned_earthquakes.geojson')
+        .then(response => response.json())
+        .then(data => {
+            L.geoJSON(data, {
+                pointToLayer: function (feature, latlng) {
+                    // Utilisation de la magnitude pour ajuster la taille des marqueurs
+                    return L.circleMarker(latlng, {
+                        radius: feature.properties.magnitude * 2, // Taille basée sur la magnitude
+                        fillColor: "red",
+                        color: "#000",
+                        weight: 1,
+                        opacity: 1,
+                        fillOpacity: 0.8
+                    });
+                },
+                onEachFeature: function (feature, layer) {
+                    // Ajouter des popups pour chaque point avec les détails
+                    layer.bindPopup(
+                        "<b>Date :</b> " + feature.properties.timestamp + "<br>" +
+                        "<b>Magnitude :</b> " + feature.properties.magnitude + "<br>" +
+                        "<b>Profondeur :</b> " + feature.properties.depth + " km"
+                    );
+                }
+            }).addTo(map);
+        })
+        .catch(error => console.error("Erreur lors du chargement du GeoJSON :", error));
+</script>
